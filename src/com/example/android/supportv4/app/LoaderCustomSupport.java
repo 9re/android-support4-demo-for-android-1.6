@@ -42,6 +42,7 @@ import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.view.MenuCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -83,7 +84,7 @@ public class LoaderCustomSupport extends FragmentActivity {
         public AppEntry(AppListLoader loader, ApplicationInfo info) {
             mLoader = loader;
             mInfo = info;
-            mApkFile = new File(info.sourceDir);
+            mApkFile = info.sourceDir != null ? new File(info.sourceDir) : new File("?");
         }
 
         public ApplicationInfo getApplicationInfo() {
@@ -372,7 +373,9 @@ public class LoaderCustomSupport extends FragmentActivity {
         public void setData(List<AppEntry> data) {
             clear();
             if (data != null) {
-                addAll(data);
+                for (AppEntry appEntry : data) {
+                    add(appEntry);
+                }
             }
         }
 
@@ -397,7 +400,7 @@ public class LoaderCustomSupport extends FragmentActivity {
     }
 
     public static class AppListFragment extends ListFragment
-            implements OnQueryTextListener, LoaderManager.LoaderCallbacks<List<AppEntry>> {
+            implements /* OnQueryTextListener, */ LoaderManager.LoaderCallbacks<List<AppEntry>> {
 
         // This is the Adapter being used to display the list's data.
         AppListAdapter mAdapter;
@@ -431,12 +434,14 @@ public class LoaderCustomSupport extends FragmentActivity {
             // Place an action bar item for searching.
             MenuItem item = menu.add("Search");
             item.setIcon(android.R.drawable.ic_menu_search);
-            item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            MenuCompat.setShowAsAction(item, MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            /*
             SearchView sv = new SearchView(getActivity());
             sv.setOnQueryTextListener(this);
-            item.setActionView(sv);
+            item.setActionView(sv);*/
         }
 
+        /*
         @Override public boolean onQueryTextChange(String newText) {
             // Called when the action bar search text has changed.  Since this
             // is a simple array adapter, we can just have it do the filtering.
@@ -449,6 +454,7 @@ public class LoaderCustomSupport extends FragmentActivity {
             // Don't care about this.
             return true;
         }
+        */
 
         @Override public void onListItemClick(ListView l, View v, int position, long id) {
             // Insert desired behavior here.

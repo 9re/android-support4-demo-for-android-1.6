@@ -16,6 +16,8 @@
 
 package com.example.android.supportv4.app;
 
+import java.lang.reflect.Field;
+
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ListFragment;
@@ -26,6 +28,7 @@ import android.support.v4.widget.SimpleCursorAdapter;
 
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract.Contacts;
 import android.text.TextUtils;
@@ -75,10 +78,19 @@ public class LoaderCursorSupport extends FragmentActivity {
             setHasOptionsMenu(true);
 
             // Create an empty adapter we will use to display the loaded data.
-            mAdapter = new SimpleCursorAdapter(getActivity(),
-                    android.R.layout.simple_list_item_2, null,
-                    new String[] { Contacts.DISPLAY_NAME, Contacts.CONTACT_STATUS },
-                    new int[] { android.R.id.text1, android.R.id.text2 }, 0);
+            mAdapter = new SimpleCursorAdapter(
+                           getActivity(),
+                           android.R.layout.simple_list_item_2, null,
+                           (
+                               (Build.VERSION.SDK_INT < 5) ?
+                                   new String[] { Contacts.DISPLAY_NAME } :
+                                   new String[] { Contacts.DISPLAY_NAME, Contacts.CONTACT_STATUS }
+                           ),
+                           (
+                               (Build.VERSION.SDK_INT < 5) ?
+                                   new int[] { android.R.id.text1 } :
+                                   new int[] { android.R.id.text1, android.R.id.text2 }
+                           ), 0);
             setListAdapter(mAdapter);
 
             // Start out with a progress indicator.
@@ -113,15 +125,22 @@ public class LoaderCursorSupport extends FragmentActivity {
             Log.i("FragmentComplexList", "Item clicked: " + id);
         }
 
+        private static final boolean IS_API_LEVEL_4 = (Build.VERSION.SDK_INT < 5);
         // These are the Contacts rows that we will retrieve.
-        static final String[] CONTACTS_SUMMARY_PROJECTION = new String[] {
-            Contacts._ID,
-            Contacts.DISPLAY_NAME,
-            Contacts.CONTACT_STATUS,
-            Contacts.CONTACT_PRESENCE,
-            Contacts.PHOTO_ID,
-            Contacts.LOOKUP_KEY,
-        };
+        static final String[] CONTACTS_SUMMARY_PROJECTION = 
+            IS_API_LEVEL_4 ?
+                new String[] {
+                    Contacts._ID,
+                    Contacts.DISPLAY_NAME,
+                } :
+                new String [] {
+                    Contacts._ID,
+                    Contacts.DISPLAY_NAME,
+                    Contacts.CONTACT_STATUS,
+                    Contacts.CONTACT_PRESENCE,
+                    Contacts.PHOTO_ID,
+                    Contacts.LOOKUP_KEY,
+                };
 
         public Loader<Cursor> onCreateLoader(int id, Bundle args) {
             // This is called when a new Loader needs to be created.  This
@@ -130,16 +149,30 @@ public class LoaderCursorSupport extends FragmentActivity {
             // currently filtering.
             Uri baseUri;
             if (mCurFilter != null) {
-                baseUri = Uri.withAppendedPath(Contacts.CONTENT_FILTER_URI,
+                Uri CONTENT_FILTER_URI = null;
+                if (IS_API_LEVEL_4) {
+                    CONTENT_FILTER_URI = android.provider.Contacts.Phones.CONTENT_FILTER_URL;
+                } else {
+                    CONTENT_FILTER_URI = Uri.parse("content://com.android.contacts/phone_lookup");
+                }
+                
+                baseUri = Uri.withAppendedPath(/*Contacts.CONTENT_FILTER_URI*/
+                        CONTENT_FILTER_URI,
                         Uri.encode(mCurFilter));
             } else {
-                baseUri = Contacts.CONTENT_URI;
+                Uri CONTENT_URI = null;
+                if (IS_API_LEVEL_4) {
+                    CONTENT_URI = android.provider.Contacts.Phones.CONTENT_URI;
+                } else {
+                    CONTENT_URI = Uri.parse("content://com.android.contacts/data/phones");
+                }
+                baseUri = /* Contacts.CONTENT_URI */ CONTENT_URI;
             }
 
             // Now create and return a CursorLoader that will take care of
             // creating a Cursor for the data being displayed.
             String select = "((" + Contacts.DISPLAY_NAME + " NOTNULL) AND ("
-                    + Contacts.HAS_PHONE_NUMBER + "=1) AND ("
+                     /* + Contacts.HAS_PHONE_NUMBER + "=1) AND (" */
                     + Contacts.DISPLAY_NAME + " != '' ))";
             return new CursorLoader(getActivity(), baseUri,
                     CONTACTS_SUMMARY_PROJECTION, select, null,
