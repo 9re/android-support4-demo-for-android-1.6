@@ -136,7 +136,7 @@ public class LocalServiceBroadcaster extends Activity {
         }
 
         @Override
-        public int onStartCommand(Intent intent, int flags, int startId) {
+        public void onStart(Intent intent, int startId) {
             // Tell any local interested parties about the start.
             mLocalBroadcastManager.sendBroadcast(new Intent(ACTION_STARTED));
 
@@ -144,7 +144,7 @@ public class LocalServiceBroadcaster extends Activity {
             mHandler.removeMessages(MSG_UPDATE);
             Message msg = mHandler.obtainMessage(MSG_UPDATE);
             mHandler.sendMessageDelayed(msg, 1000);
-            return Service.START_STICKY;
+            //return Service.START_STICKY;
         }
 
         @Override
